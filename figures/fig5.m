@@ -219,7 +219,7 @@ macCI=quantile(macdensR(:,col),[.025,.5,.975])
 wi=9;
 hi=9;
 set(gcf,'PaperUnits','Centimeters','PaperPosition',[0 0 wi hi],'PaperSize',[wi hi])
-print(‘fig5.pdf','-dpdf')
+print('fig5.pdf','-dpdf')
 %% get upper and lower bounds across density for Kenn based on the above
 
 nb=length(bins);

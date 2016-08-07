@@ -1,4 +1,4 @@
-%investigate consistency of injections; 
+%investigate consistency of injections;
 PERC=true;%look at percentages or ncd?
 %Kennedy
 [macIn, macOut, FLN, source, unS, target, macNames, data, PNASdata,total] = loadKennedyData();
@@ -32,7 +32,7 @@ load('cortInOutCCO50')
 
 %divide by out volume to obtain fractional weight estimates
 if PERC
-	cortOut=bsxfun(@times,Out,1./sum(Out,2));
+    cortOut=bsxfun(@times,Out,1./sum(Out,2));
 else
     cortOut=bsxfun(@times,Out,1./sum(In,2));
 end
@@ -60,7 +60,7 @@ cocoConn=(cocoConn-104)*2;
 
 
 %% get macaque volumes
-load(‘macaque_volume')
+load('macaque_volume')
 
 cutoff=.9;
 
@@ -72,44 +72,44 @@ Ins=cell(nOuts,1);
 
 %%
 
-     %arrange experiments
-     for l=1:2
-         if l==1;
-             Inn=cortIn;
-             Outt=cortOut;
-         elseif l==2;
-             Inn=macIn;
-             Outt=macOut;
-         end
-     normIn=bsxfun(@times,Inn,1./sum(Inn,2));
-     maxE=ceil(max(sum(normIn>cutoff)));
-     regs=find(sum(normIn>cutoff)>0); 
-     Outs{l}=[];
-     for j=1:length(regs)
-         exps=normIn(:,regs(j))>cutoff;
-         Outs{l}=[Outs{l},[Outt(exps,:);nan(maxE-sum(exps),size(Outt,2))]];
-     end
-     end
-     
-     %all cocomac values
-     
-    strCoco=coco;
-    strCoco(strCoco==101.23)=nan;%cant use 'exists' for strength analysis
-    strCoco(strCoco==100)=nan;%cant use non-existence for strength analysis
-    strCoco=strCoco-100;
-    noStr=squeeze(sum(~isnan(strCoco),3));
-    maxE=max(noStr(:));
-    Outs{3}=nan(maxE,sum(noStr(:)>0));
-    s=size(strCoco,1);
-    for i=1:s
-        for j=1:s
-            if noStr(i,j)>0
-                exps=~isnan(strCoco(i,j,:));
-                Outs{3}=[Outs{3},10.^[squeeze(strCoco(i,j,exps));nan(maxE-sum(exps),1)]];
-            end
+%arrange experiments
+for l=1:2
+    if l==1;
+        Inn=cortIn;
+        Outt=cortOut;
+    elseif l==2;
+        Inn=macIn;
+        Outt=macOut;
+    end
+    normIn=bsxfun(@times,Inn,1./sum(Inn,2));
+    maxE=ceil(max(sum(normIn>cutoff)));
+    regs=find(sum(normIn>cutoff)>0);
+    Outs{l}=[];
+    for j=1:length(regs)
+        exps=normIn(:,regs(j))>cutoff;
+        Outs{l}=[Outs{l},[Outt(exps,:);nan(maxE-sum(exps),size(Outt,2))]];
+    end
+end
+
+%all cocomac values
+
+strCoco=coco;
+strCoco(strCoco==101.23)=nan;%cant use 'exists' for strength analysis
+strCoco(strCoco==100)=nan;%cant use non-existence for strength analysis
+strCoco=strCoco-100;
+noStr=squeeze(sum(~isnan(strCoco),3));
+maxE=max(noStr(:));
+Outs{3}=nan(maxE,sum(noStr(:)>0));
+s=size(strCoco,1);
+for i=1:s
+    for j=1:s
+        if noStr(i,j)>0
+            exps=~isnan(strCoco(i,j,:));
+            Outs{3}=[Outs{3},10.^[squeeze(strCoco(i,j,exps));nan(maxE-sum(exps),1)]];
         end
-     end
- end
+    end
+end
+
 %%
 
 studyNames={['Allen'],['Markov'],'Cocomac'};
@@ -119,14 +119,14 @@ levNames={'Log signal fraction','Variance','Weight distribution'};
 for i=1:nOuts
     x=log10(Outs{i});
     limit=min(x(x(:)>-Inf));
-        x(x==-Inf)=nan;%remove 0's
-        %remove connections with 1 or less measurements after saving means
-        x=x(:,sum(~isnan(x))>0);
-        ms=nanmean(x);
-        x=x(:,sum(~isnan(x))>1);
-        [~,ord]=sort(nanmean(x));
-        x=x(:,ord);
-        subplot(2,nOuts,i)
+    x(x==-Inf)=nan;%remove 0's
+    %remove connections with 1 or less measurements after saving means
+    x=x(:,sum(~isnan(x))>0);
+    ms=nanmean(x);
+    x=x(:,sum(~isnan(x))>1);
+    [~,ord]=sort(nanmean(x));
+    x=x(:,ord);
+    subplot(2,nOuts,i)
     
     jitter=rand(size(x))*.5-.25;
     if i<3
@@ -142,7 +142,7 @@ for i=1:nOuts
     if i==3
         ylim([0 4])
     end
-%     title(studyNames{i})
+    %     title(studyNames{i})
     subplot(2,nOuts,i+nOuts)
     varss=nanvar(x);
     varss(sum(~isnan(x))<=1)=nan;%remove those with only one value available
@@ -166,4 +166,4 @@ for i=1:nOuts
 end
 
 set(gcf,'PaperUnits','Centimeters','PaperPosition',[0 0 12 9],'PaperSize',[12 9]);
-print(‘fig2.pdf’,’-dpdf','-r300')
+print('fig2.pdf','-dpdf','-r300')

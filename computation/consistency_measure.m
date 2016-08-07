@@ -6,7 +6,7 @@ load('cocovals') %these are extracted from the xls available from cocomac.g-node
 
 MINMEANEXP=1;%all exps for mean (1), or only those used for var (2)?
 keepZeros=0;%0 if discarding zeroes and working with log values
-belowQuantile=.5;%1 if all connections. lower for only compute this over lower values
+belowQuantile=1;%1 if all connections. lower for only compute this over lower values
 %% transform values to what they would look like for tracing
 strCoco=coco;
 strCoco(strCoco==101.23)=nan;%cant use 'exists' for strength analysis
@@ -61,7 +61,7 @@ for i=1:length(ids)
         toUse(sum(out>0)==0)=0;
     end
     if sum(toUse)>0
-    	varsK=[varsK,(nanvar(out(:,toUse)))];
+        varsK=[varsK,(nanvar(out(:,toUse)))];
         assocMeansK=[assocMeansK,(nanmean(out(:,toUse)))];
     end
     toUse=(sum(~isnan(out),1)>=MINMEANEXP)&sum(InK(exps,:),1)==0;
@@ -78,67 +78,63 @@ if sum(varsK(:)==0)>0
     fout
 end
 
-     size(varsK)
-     size(meansK)
-     cu=quantile(meansK,belowQuantile);
-    varsK=varsK(assocMeansK<=cu);
-%     meansK=meansK(meansK<=cu);
-         size(varsK)
-     size(meansK)
+size(varsK)
+size(meansK)
+cu=quantile(meansK,belowQuantile);
+varsK=varsK(assocMeansK<=cu);
+size(varsK)
+size(meansK)
 nanmean(varsK)
 nanvar(meansK)%how spread are the estimates?
 V_Kenn=nanmean(varsK)/nanvar(meansK)%V=measurement var over estimates var (lower is better)
 
-%% in the same, simple way, look at Allen data. 
+%% in the same, simple way, look at Allen data.
 load('cortInOutCCO50')
 %%
 percOut=bsxfun(@times,Out,1./sum(Out,2));
 relOut=bsxfun(@times,Out,1./sum(In,2));
-cus=[0.01:.01:1];
-meas=nan(length(cus),1);
-    cutoff=.5;
-    ids=find(sum(normIn>cutoff)>0);
-    varsA=[];
-    assocMeansA=[];%the means related to the vars above
-    meansA=[];
-    for i=1:length(ids)
-        id=ids(i);
-        exps=find(normIn(:,id)>cutoff);
-        if ~keepZeros
-            out=log10(percOut(exps,:));%use percOut to make comparable to Kennedy macaque data
-        else
-            out=percOut(exps,:);
-        end
-        toUse=sum(~isnan(out),1)>1&max(normIn(exps,:),[],1)<cutoff;
-        if keepZeros
-            %     remove the ones with only zeroes
-            toUse(sum(out>0)==0)=0;
-        end
-        if sum(toUse)>0
-        	varsA=[varsA,(nanvar(out(:,toUse)))];
-        	assocMeansA=[assocMeansA,(nanmean(out(:,toUse)))];
-        end
-        toUse=sum(~isnan(out),1)>=MINMEANEXP&max(normIn(exps,:),[],1)<cutoff;
-        if keepZeros
-            %     remove the ones with only zeroes
-            toUse(sum(out>0)==0)=0;
-        end
-        if sum(toUse)>0
+cutoff=0.5;
+ids=find(sum(normIn>cutoff)>0);
+varsA=[];
+assocMeansA=[];%the means related to the vars above
+meansA=[];
+for i=1:length(ids)
+    id=ids(i);
+    exps=find(normIn(:,id)>cutoff);
+    if ~keepZeros
+        out=log10(percOut(exps,:));%use percOut to make comparable to Kennedy macaque data
+    else
+        out=percOut(exps,:);
+    end
+    out(out==-Inf)=nan;
+    toUse=sum(~isnan(out),1)>1&max(normIn(exps,:),[],1)<cutoff;
+    if keepZeros
+        %     remove the ones with only zeroes
+        toUse(sum(out>0)==0)=0;
+    end
+    if sum(toUse)>0
+        varsA=[varsA,(nanvar(out(:,toUse)))];
+        assocMeansA=[assocMeansA,(nanmean(out(:,toUse)))];
+    end
+    toUse=sum(~isnan(out),1)>=MINMEANEXP&max(normIn(exps,:),[],1)<cutoff;
+    if keepZeros
+        %     remove the ones with only zeroes
+        toUse(sum(out>0)==0)=0;
+    end
+    if sum(toUse)>0
         meansA=[meansA,nanmean(out(:,toUse),1)];
-        end
     end
-    cu=quantile(meansA,cutoff);
-    varsA=varsA(assocMeansA<=cu);
-%     meansA=meansA(meansA<=cu);
-    %with no identical values, var=0 means there was only one measurement
-    % meansA(varsA==0)=nan;%one measurement
-    % varsA(varsA==0)=nan;
-    %should be no var=0
-    if sum(varsA(:)==0)>0
-        fout
-    end
-    % nanmean(varsA)
-    % nanvar(meansA)%how spread are the estimates?
-    [numel(varsA) numel(meansA)]
-    V_Allen=nanmean(varsA)/nanvar(meansA)
+end
+cu=quantile(meansA,belowQuantile);
+varsA=varsA(assocMeansA<=cu);
+%with no identical values, var=0 means there was only one measurement
+
+%should be no var=0
+if sum(varsA(:)==0)>0
+    err; % should not happen
+end
+% nanmean(varsA)
+% nanvar(meansA)%how spread are the estimates?
+[numel(varsA) numel(meansA)]
+V_Allen=nanmean(varsA)/nanvar(meansA)
 

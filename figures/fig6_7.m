@@ -124,13 +124,10 @@ end
 %%
 wi=9;
 hi=9;
-cd('/work/imagingL/autism_graphtheory/Tracers/2015_data/graph theory')
 set(gcf,'PaperUnits','Centimeters','PaperPosition',[0 0 wi hi],'PaperSize',[wi hi])
-print([num2str(choice) '_graph_measures.pdf'],'-dpdf')
+print([num2str(choice) '_fig7.pdf'],'-dpdf')
 
 %% split connections up per weight category. different properties?
-%load 'need from figDens'
-cd('/work/imagingL/autism_graphtheory/Tracers/2015_data/graph theory')
 load('need')
 % find centroid
 centr=nan(86,3);
@@ -147,7 +144,6 @@ need=squeeze(median(need(:,:,[in-43, in])));
     need=[need(:,end/2+1:end),need(:,1:end/2);need];
 
     %%
-% mat=medMu(:,in);
 
 
     mat=medMu(:,[in-43,in]);
@@ -179,11 +175,6 @@ scatter(centr(:,2),centr(:,3),siz+sum(weak+weak')*siz,'f')
 hold off
 axis equal
 axis off
-
-% strongest=find(sum(weak+weak')>3);
-%remove the doubles, leave some in each hemi
-% strongest([1:2:end/2,end/2+2:2:end])=[];
-% text(centr(strongest,[2])+3,centr(strongest,[3])-4,regi(strongest),'FontSize',7)
 
 set(gca,'XTick',[])
 set(gca,'YTick',[])
@@ -247,161 +238,5 @@ xlabel('Degree')
 %%
 wi=12;
 hi=12;
-cd('/work/imagingL/autism_graphtheory/Tracers/2015_data/graph theory')
 set(gcf,'PaperUnits','Centimeters','PaperPosition',[0 0 wi hi],'PaperSize',[wi hi])
-print('strong_weak.pdf','-dpdf')
-
-%% for macaque?
-cd('/work/imagingL/autism_graphtheory/Tracers/2015_data/logliknormflip')
-load('2910_50_Mean_Kenn.mat')
-cd('/work/imagingL/autism_graphtheory/Tracers/macaque Kennedy')
-load('volume')
-load('InterRegionDistancesKonrad')
-[macIn, macOut, FLN, source, unS, target, names, data, PNASdata,total] = loadKennedyData();
-estTotal=nan(29,1);
-mI=macIn(:,sum(macIn)>0);
-for i=1:29
-    estMac(i,:)=mean(macOut(mI(:,i)==1,:),1);
-    estTotal(i)=max(total(mI(:,i)==1));
-end
-
-%for entire posterior
-mm=10.^Mus(end/5:end,:,:);
-%convert to expected total signal
-%some tricks to extend vols
-v=repmat(macVols,[1,1,29]);
-v=permute(v,[2,3,1]);
-mm=bsxfun(@times,mm,v);
-
-%have to permute due to MATLAB oddness..
-musFmac=permute(log10(bsxfun(@times,permute(mm,[3 1 2]),1./nansum(permute(mm,[3,1,2]),1))),[2 3 1]);% is this the same as estimating percentages straight away?
-
-ran=floor(m/sampFreq/5):floor(m/sampFreq);
-medMu=squeeze(nanmedian(musFmac));
-medMu(isnan(medMu))=-Inf;
-in=find(sum(injOutRegions)>0);
-
-centr=nan(91,3);
-centr(map(map>0),:)=LeftCOM((map>0),:);
-centr=centr(in,:);
-regMac=cell(91,1);
-regMac(map(map>0))=Names(map>0);
-regMac=regMac(in);
- % find dists (and reproduce matrix to check)
-nK=length(unS);
-G=zeros(nK);%make square one
-d=zeros(nK);
-load distsPNAS
-for i=1:nK
-    for j=1:nK
-        meas=(source==unS(i) & target==unS(j));
-       
-        if(sum(meas)==1)
-            G(j,i)=FLN(meas);% NOTE: inaccurate, should take into account the experiments with 0 neurons
-            d(j,i)=mean(distsPNAS(meas));%note: should be all the same
-        else if(sum(meas)>1)
-            G(j,i)=mean(FLN(meas));
-            d(j,i)=mean(distsPNAS(meas));%note: should be all the same
-            end
-           
-        end
-  
-    end
-end
-d=d(in,in);
-need=repmat(log10(1./estTotal)',29,1);
-
-%%
-
-mat=medMu(:,[in]);
-    siz=4;
-    %distsMac>0 ensures Kennedy thinks its > 0
-bnds=quantile(mat(mat>need&d>0),[.05 .95]);
-weak=mat<bnds(1)&mat>need&d>0;
-strong=mat>bnds(2)&mat>need&d>0;
-
-%generate random nulls
-N=10;
-dsrand=[];%distance values found;
-distrand=[];%degree values found;
-allowed=find(mat>need);
-nn=length(allowed);
-for n=1:N
-    randmat=false(size(mat));
-    randmat(allowed(randsample(nn,sum(strong(:)))))=1;%set the same number of edges to 1
-    dsrand=[dsrand; d(randmat)];
-    distrand=[distrand,sum(randmat+randmat')];%could use bins for performance...
-end
-
-subplot('Position',[0 .5 .5 .5])
-gplot(weak,centr(:,[2,3]))
-hold on
-scatter(centr(:,2),centr(:,3),siz+sum(weak+weak')*siz,'f')
-hold off
-axis equal
-axis off
-
-% strongest=find(sum(weak+weak')>3);
-%remove the doubles, leave some in each hemi
-% strongest([1:2:end/2,end/2+2:2:end])=[];
-% text(centr(strongest,[2])+3,centr(strongest,[3])-4,regi(strongest),'FontSize',7)
-
-set(gca,'XTick',[])
-set(gca,'YTick',[])
-% xlabel('Axial view of weak connections')
-
-subplot('Position',[0.5 .5 .5 .5])
-gplot(strong,centr(:,[2,3]))
-hold on
-scatter(centr(:,2),centr(:,3),siz+sum(strong+strong')*siz,'f')
-hold off
-strongest=find(sum(strong+strong')>6);
-%remove the doubles, leave some in each hemi
-% strongest([1:2:end/2,end/2+2:2:end])=[];
-strongest([1+end/2:end])=[];
-text(centr(strongest,[2])+3,centr(strongest,[3])-4,regi(strongest),'FontSize',7,'fontweight','bold')
-axis off
-set(gca,'XTick',[])
-set(gca,'YTick',[])
-axis equal
-% xlabel('Axial view of strong connections')
-subplot 223
-histogram(d(weak),'facealpha',.5)
-hold on
-histogram(d(strong),'facealpha',.5)
-h=ylim;
-xs=xlim;
-dd=5;
-bi=xs(1):dd:xs(2);
-f=zeros(length(bi),1);
-for i=1:length(bi)
-    f(i)=sum(bi(i)-dd/2<dsrand&dsrand<bi(i)+dd/2);
-end
-plot(bi,f*h(2)/sum(strong(:))/2,'k','linewidth',2);
-hold off
-ylabel('Frequency')
-xlabel('Euclidean distance (mm)')
-subplot 224
-histogram(sum(weak+weak'),0:1/3:10,'facealpha',.5)
-hold on
-histogram(sum(strong+strong'),-1/3+.01:1/3:10,'facealpha',.5)
-xlim([-.4 10])
-h=ylim;
-xs=xlim;
-dd=1;
-bi=xs(1):dd:xs(2);
-f=zeros(length(bi),1);
-for i=1:length(bi)
-    f(i)=sum(bi(i)-dd/2<distrand&distrand<bi(i)+dd/2);
-end
-plot(bi,f*h(2)/sum(strong(:))/2,'k','linewidth',2);
-hold off
-ylabel('Frequency')
-xlabel('Degree')
-
-%%
-wi=9;
-hi=9;
-cd('/work/imagingL/autism_graphtheory/Tracers/2015_data/graph theory')
-set(gcf,'PaperUnits','Centimeters','PaperPosition',[0 0 wi hi],'PaperSize',[wi hi])
-print('strong_weak_Mac.pdf','-dpdf')
+print('fig6.pdf','-dpdf')

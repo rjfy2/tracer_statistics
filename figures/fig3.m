@@ -13,13 +13,10 @@ load('atlasData');
 dim3=size(atlas);
 
 %also read the 295region brain, which corresponds to the manual analysis
-load('Data_Allen_20140921.mat')
+load('exps.mat')
 %differentiate between hemispheres
 Prcl=[Prcl_ID(:,1);Prcl_ID(:,2)+10000];
 vol=[Prcl_Vol(:,1);Prcl_Vol(:,2)];
-Atlas=reshape(Atls,dim3);
-Atlas(:,:,58:end)=Atlas(:,:,58:end)+10000;
-Atlas(Atlas==10000)=0;%only keep nonbrain as nonbrain
 factor=.05^3;%convert to mm3
 vols=vols*factor;
 %% plot the atlases
@@ -269,7 +266,7 @@ for ii=1:noo
 	end
 end
 set(gcf,'PaperUnits','Centimeters','PaperPosition',[0 0 9 9]);
-print(‘fig3a_d.pdf','-dpdf','-r300')
+print('fig3a_d.pdf','-dpdf','-r300')
 
 %% are hemispheres related?
 

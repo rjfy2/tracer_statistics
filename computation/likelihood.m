@@ -1,8 +1,7 @@
 function [lle, noiseComp, connComp, connContr] = loglikLognormMean(inExp,outExp,mus,sigm,pdfNoise,cdfNoise,zeroMeasured,volsNonInjExp,outInj)
 %assume noise and connection dont both contribute. Then it's one of the two; the other must be smaller
-%parameter mu is strength of connection
-%scalar sigma is standard deviation - function of mu
-%note that for multiply injected regions with connection, the new strength is not a convolution 
+%parameter mu is strength of connection, sigma variability
+%note that for multiply injected regions with connection, the new strength is not a convolution
 %(which would assume independence)
 
 %number of injections and number of injected regions
@@ -43,19 +42,19 @@ noiseComp=lik;
 connComp=lik;
 %noise larger
 noiseComp(nonz)=pdfNoise(nonz).*normcdf(squeeze(outMeas(nonz)),squeeze(totMu(nonz)),squeeze(totSigm(nonz)));
- 
+
 %connection larger
 connComp(nonz)=cdfNoise(nonz).*normpdf(outMeas(nonz),totMu(nonz),totSigm(nonz));
 
 
 lik=noiseComp+connComp;
 
- %if 0 is measured, use cdfs:
- %NCD
+%if 0 is measured, use cdfs:
+%NCD
 outMeas=log10(bsxfun(@times,zeroMeasured./volsNonInjExp,1./sum(inExp,2)));
 %contribution of cdfNoise here is a constant, so leave it out.
- lik(~nonz)=normcdf(outMeas(~nonz),totMu(~nonz),totSigm(~nonz));
- 
+lik(~nonz)=normcdf(outMeas(~nonz),totMu(~nonz),totSigm(~nonz));
+
 
 lik(outInj)=1;%ignore the out regions that were injected
 lle=sum(log(lik),2);

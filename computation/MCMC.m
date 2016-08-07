@@ -1,5 +1,5 @@
 
-%find posterior distribution of parameters, with noise as given by Allen manual experiments 
+%find posterior distribution of parameters, with noise as given by Allen manual experiments
 %Assume distrs are lognormal, mixed is still lognormal (errors are
 %dependent), std is constant
 
@@ -13,80 +13,80 @@
 %positive, for each region
 %Outids is the id of the Out region, for each of the In regions
 %smallest injection fraction we allow. If lower, remove for computational reasons
-    SMALLESTIN=.01;
+SMALLESTIN=.01;
 
-    %% load the data from the new Allen CCO
+%% load the data from the new Allen CCO
 %%this was made by masking the cortical regions from the downloadable data, and making sure contralateral homologue regions are distinct
-    load('/work/imagingL/autism_graphtheory/Tracers/2015_data/cortInOutCCO50')
-    
-    factor = .05^3;%convert to mm3 before estimation
-    Out=Out*factor;
-    In=In*factor;
-    vols=vols*factor;
-        
+load('/work/imagingL/autism_graphtheory/Tracers/2015_data/cortInOutCCO50')
 
-    outIds=1:size(Out,2);
-    %remove 0’s; assume they have below-threshold signal (either from connections or noise). Assign the lowest volume found (corrected for injection and region size
-    [a,b]=find(Out==0);
-    injVol=sum(In,2);
-    %find smallest value measured
-    smallest=bsxfun(@times,Out,1./vols);
-    MINVALUE=min(nonzeros(smallest));
-    
-    zeroMeasured=nan(size(Out));
-    zeroMeasured(Out==0)=MINVALUE.*vols(b)';%assign low value weighted by injection and region size
-    
-    nexp=size(In,1);
-    volsNonInj=repmat(vols,nexp,1);%volume not injected, per region per experiment. As we assume there is no information for injected regions, this is equal to region volume
-    
-    
-    %compute the pdf+cdf for each Out measurement that it was false
-    %positive.
-    load('noisePerRegionCort')
-    xs=xs+log10(factor);%convert to mm3 (xs are the measured values for the 20 manually curated experiments, on a log-scale)
-    pdfNoise=zeros(size(Out)); % initialise
-    cdfNoise=pdfNoise; 
-    %assume symmetry: contralateral homologue regions have the same noise profile (this is supported by the data)
-    xs=[xs;xs];
-    trueSignal=[trueSignal;trueSignal]; %trueSignal is whether the signal was deemed to be a real connection
-    
-    
-    DISCARDEXTREMES=1;%reviewer suggested sensitivity analysis on discarding extreme false positives
-    if DISCARDEXTREMES
-        for i=1:43
-            high=max(xs(i,trueSignal(i,:)==0));
-            low=min(xs(i,trueSignal(i,:)==1));
-            if high>low%swap the two most extreme values (rater error?)
-                trueSignal(i,xs(i,:)==high)=1;
-                trueSignal(i,xs(i,:)==low)=0;
-                trueSignal(i+43,xs(i,:)==high)=1;
-                trueSignal(i+43,xs(i,:)==low)=0;
-            else
-                [i,high,low]
-            end
+factor = .05^3;%convert to mm3 before estimation
+Out=Out*factor;
+In=In*factor;
+vols=vols*factor;
+
+
+outIds=1:size(Out,2);
+%remove 0’s; assume they have below-threshold signal (either from connections or noise). Assign the lowest volume found (corrected for injection and region size
+[a,b]=find(Out==0);
+injVol=sum(In,2);
+%find smallest value measured
+smallest=bsxfun(@times,Out,1./vols);
+MINVALUE=min(nonzeros(smallest));
+
+zeroMeasured=nan(size(Out));
+zeroMeasured(Out==0)=MINVALUE.*vols(b)';%assign low value weighted by injection and region size
+
+nexp=size(In,1);
+volsNonInj=repmat(vols,nexp,1);%volume not injected, per region per experiment. As we assume there is no information for injected regions, this is equal to region volume
+
+
+%compute the pdf+cdf for each Out measurement that it was false
+%positive.
+load('noisePerRegionCort')
+xs=xs+log10(factor);%convert to mm3 (xs are the measured values for the 20 manually curated experiments, on a log-scale)
+pdfNoise=zeros(size(Out)); % initialise
+cdfNoise=pdfNoise;
+%assume symmetry: contralateral homologue regions have the same noise profile (this is supported by the data)
+xs=[xs;xs];
+trueSignal=[trueSignal;trueSignal]; %trueSignal is whether the signal was deemed to be a real connection
+
+
+DISCARDEXTREMES=1;%reviewer suggested sensitivity analysis on discarding extreme false positives
+if DISCARDEXTREMES
+    for i=1:43
+        high=max(xs(i,trueSignal(i,:)==0));
+        low=min(xs(i,trueSignal(i,:)==1));
+        if high>low%swap the two most extreme values (rater error?)
+            trueSignal(i,xs(i,:)==high)=1;
+            trueSignal(i,xs(i,:)==low)=0;
+            trueSignal(i+43,xs(i,:)==high)=1;
+            trueSignal(i+43,xs(i,:)==low)=0;
+        else
+            [i,high,low]
         end
     end
-    
-    for i=1:size(Out,1);
-        for j=1:size(Out,2);
-            %take cumulative
-            cdfNoise(i,j)=mean(xs(j,trueSignal(j,:)==0)<log10(Out(i,j)./volsNonInj(i,j)));
-        end
-    end
-    
-    for i=1:size(Out,2)
-        pdfNoise(:,i)=ksdensity(xs(i,trueSignal(i,:)==0),log10(Out(:,i)./volsNonInj(:,i)));
-    end
-    
-    % median of the noise - not used in calculation but in later plots
-    medNoiseDensity=zeros(size(Out));
-    %find the median density of noise distribution for each region, in
-    %units total signal
+end
+
+for i=1:size(Out,1);
     for j=1:size(Out,2);
-        medNoiseDensity(:,j)=10.^quantile(xs(j,trueSignal(j,:)==0),.5);
+        %take cumulative
+        cdfNoise(i,j)=mean(xs(j,trueSignal(j,:)==0)<log10(Out(i,j)./volsNonInj(i,j)));
     end
-   %%
-	MACAQUE = 0 % set to one to analyse macaque data
+end
+
+for i=1:size(Out,2)
+    pdfNoise(:,i)=ksdensity(xs(i,trueSignal(i,:)==0),log10(Out(:,i)./volsNonInj(:,i)));
+end
+
+% median of the noise - not used in calculation but in later plots
+medNoiseDensity=zeros(size(Out));
+%find the median density of noise distribution for each region, in
+%units total signal
+for j=1:size(Out,2);
+    medNoiseDensity(:,j)=10.^quantile(xs(j,trueSignal(j,:)==0),.5);
+end
+%%
+MACAQUE = 0 % set to one to analyse macaque data
 if MACAQUE
     %For the macaque data by Kennedy et al.
     [In, Out, FLN, source, unS, target, names, data, PNASdata,total] = loadKennedyData();
@@ -103,11 +103,11 @@ if MACAQUE
     pdfNoise=Out*0;%assume -no- noise. Seems somewhat optimistic…
     cdfNoise=ones(size(Out));
 end
-    
-    %%
-    
-    beta=Inf%set to lower for simulated annealing
-    M=1000000% # iterations
+
+%%
+
+beta=Inf%set to lower for simulated annealing
+M=1000000% # iterations
 
 
 
@@ -137,7 +137,7 @@ for i=1:Ninj
     %remove if In is a significant fraction of Out
     nz=nonzeros(unique(outIds(In(i,:)./Out(i,:)>0.0)));
     injOutRegions(i,nz)=1;
- end
+end
 injOutRegions=logical(injOutRegions);
 
 %record which connections can be measured (i.e. are not removed above)
@@ -184,10 +184,10 @@ for i=1:Ninjected
     end
 end
 
-    coef=1;%constant sigma
+coef=1;%constant sigma
 
 %hyperparameters for the step size in the MCMC will be tweaked during burnin
-    Ccoeff=1/5/10;
+Ccoeff=1/5/10;
 C=ones(Ninjected,2,Nregions)/5;
 
 
@@ -200,7 +200,7 @@ sampFreq=200;
 Mus = nan(M/sampFreq,Ninjected,Nregions);%save samples. burnin is discarded later
 %save space
 Mus=single(Mus);
-    Coefs=single(nan(M/sampFreq,1));
+Coefs=single(nan(M/sampFreq,1));
 
 lls=zeros(M/sampFreq,1);%for AIC
 
@@ -253,7 +253,7 @@ for m=current:M
             muNeededNow(m/sampFreq,i,:)=log10(min((muNeededOther)));
         end
         
-
+        
         
         
         
@@ -261,7 +261,7 @@ for m=current:M
     
     if(time>reportTime)
         %every so often, print a confusing report
-
+        
         mus([18,19,24],25)
         [log10(sum(In(41,:).*10.^mus(:,25)')),        log10(Out(41,25)/vols(25))]
         [~, noiseComp, connComp, ~] = loglikLognormMean(In,Out,mus,coef,pdfNoise,cdfNoise,zeroMeasured,volsNonInj,injOutRegions);
@@ -270,7 +270,7 @@ for m=current:M
         
         [mean(mus(:))]
         display('density (total above noise):')
-       nanmean(nanmean(connComp./(noiseComp+connComp)))
+        nanmean(nanmean(connComp./(noiseComp+connComp)))
         display('lik:')
         sum(ll)
         
@@ -280,14 +280,14 @@ for m=current:M
         [m/M  mean(mean(C(:,1,:))) mean(mean(C(:,2,:))) mean(mean(Ccoeff))  mean(coef(:))]
         
         if(m>sampFreq)
-%plot some information to check on chain
+            %plot some information to check on chain
             subplot 321
             plot(lls(1:floor(m/sampFreq)))
             hold all
             %             plot(plls(1:floor(m/sampFreq)))
             hold off
             subplot 323
-
+            
             plot(squeeze(Mus(1:floor(m/sampFreq),1:min(5,Ninjected),1)))
             subplot 325
             plot(mean(Coefs(1:floor(m/sampFreq),:),2))
@@ -302,7 +302,7 @@ for m=current:M
             scatter(mus(:),coef,20,knowable(:),'filled')
             subplot 326
             hist(mus(:))
-
+            
             drawnow
             
         end
@@ -320,17 +320,17 @@ for m=current:M
         end
         
         nMu=mus;
-	%change according to step size (uniform)
+        %change according to step size (uniform)
         nMu(i,(toChange(:,1)))=mus(i,(toChange(:,1)))+((rand(1,sum(toChange(:,1)))-.5)).*squeeze(C(i,1,(toChange(:,1))))';
-
+        
         %            lower and upper bounds
         
-        %mirror in boundaries. 
+        %mirror in boundaries.
         while(sum(nMu(i,:)>highMu|nMu(i,:)<lowMu)>0)
             nMu(i,nMu(i,:)>highMu)=2*highMu-nMu(i,nMu(i,:)>highMu);
             nMu(i,nMu(i,:)<lowMu)=2*lowMu-(nMu(i,nMu(i,:)<lowMu));
         end
-
+        
         
         
         %have to update the lik for all experiments this region is injected in
@@ -343,12 +343,12 @@ for m=current:M
             mus=nMu;
             acc=acc+1;
             if m<M/10
-		%during burnin, update hyper parameters
+                %during burnin, update hyper parameters
                 C(i,1,toChange(:,1))=C(i,1,toChange(:,1))*1.1;
                 C(:,1,:)=min(C(:,1,:),10);
             end
             if(sum(ll)>sum(llmax))
-		%record maximum values found - not used in article
+                %record maximum values found - not used in article
                 llmax=ll;
                 coefmax=coef;
                 mumax=mus;
@@ -369,7 +369,7 @@ for m=current:M
     accCoef=0;
     rejCoef=0;
     for repe=1:5
-%change sigma
+        %change sigma
         beta_i=1;
         nbeta=coef;
         
